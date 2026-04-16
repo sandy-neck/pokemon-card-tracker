@@ -1,0 +1,18 @@
+{
+  "name": "PokéTracker",
+  "short_name": "PokéTracker",
+  "description": "Track your Pokémon card portfolio value",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#f59e0b",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

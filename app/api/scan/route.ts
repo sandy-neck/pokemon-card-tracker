@@ -1,0 +1,68 @@
+import Anthropic from '@anthropic-ai/sdk'
+import { NextResponse } from 'next/server'
+
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
+
+export async function POST(req: Request) {
+  try {
+    const { imageBase64, mimeType } = await req.json()
+
+    if (!imageBase64) {
+      return NextResponse.json({ error: 'No image provided' }, { status: 400 })
+    }
+
+    const response = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1024,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: mimeType || 'image/jpeg',
+                data: imageBase64,
+              },
+            },
+            {
+              type: 'text',
+              text: `You are a Pokémon card expert and professional grader. Analyze this card image carefully and return a JSON object with exactly these fields:
+
+{
+  "name": "the exact card name",
+  "set_name": "the set or expansion name",
+  "card_number": "card number like 25/102",
+  "rarity": "Common, Uncommon, Rare, Holo Rare, Ultra Rare, Secret Rare, etc",
+  "hp": "HP number as string, or empty string if not a Pokemon card",
+  "card_type": "Pokemon, Trainer, or Energy",
+  "pokemon_type": "Fire, Water, Grass, Lightning, Psychic, Fighting, Darkness, Metal, Dragon, Fairy, Colorless, or empty string",
+  "condition": "Mint, Near Mint, Lightly Played, Moderately Played, Heavily Played, or Damaged",
+  "condition_notes": "1-2 sentences describing visible wear, edge whitening, scratches, centering",
+  "estimated_value_usd": 0.00,
+  "ai_description": "1-2 sentence description of the card",
+  "ai_valuation_notes": "1-2 sentences explaining what drives this card's value"
+}
+
+For estimated_value_usd: use your best knowledge of current Pokémon TCG market prices. Consider the set era, rarity, card popularity, and the condition you observed. Be realistic and grounded.
+
+Return ONLY the JSON object. No markdown, no code blocks, no other text.`,
+            },
+          ],
+        },
+      ],
+    })
+
+    const content = response.content[0]
+    if (content.type !== 'text') {
+      return NextResponse.json({ error: 'Unexpected response from AI' }, { status: 500 })
+    }
+
+    const result = JSON.parse(content.text)
+    return NextResponse.json(result)
+  } catch (error) {
+    console.error('Scan error:', error)
+    return NextResponse.json({ error: 'Failed to analyze card' }, { status: 500 })
+  }
+}
