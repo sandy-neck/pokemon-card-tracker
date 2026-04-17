@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse } from 'next/server'
+import { fetchOfficialImage } from '@/lib/pokemon-tcg'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
@@ -11,13 +12,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Card name required' }, { status: 400 })
     }
 
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 256,
-      messages: [
-        {
-          role: 'user',
-          content: `You are a Pokémon card market expert. Estimate the current market value for:
+    const [aiResponse, official_image_url] = await Promise.all([
+      client.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 256,
+        messages: [
+          {
+            role: 'user',
+            content: `You are a Pokémon card market expert. Estimate the current market value for:
 
 Card: ${cardName}
 Set: ${setName || 'Unknown'}
@@ -30,17 +32,19 @@ Return ONLY a JSON object:
   "estimated_value_usd": 0.00,
   "notes": "1-2 sentences on current market conditions and what drives this card's value"
 }`,
-        },
-      ],
-    })
+          },
+        ],
+      }),
+      fetchOfficialImage(cardName, setName, cardNumber),
+    ])
 
-    const content = response.content[0]
+    const content = aiResponse.content[0]
     if (content.type !== 'text') {
       return NextResponse.json({ error: 'Unexpected AI response' }, { status: 500 })
     }
 
     const result = JSON.parse(content.text)
-    return NextResponse.json(result)
+    return NextResponse.json({ ...result, official_image_url })
   } catch (error) {
     console.error('Revalue error:', error)
     return NextResponse.json({ error: 'Failed to re-value card' }, { status: 500 })

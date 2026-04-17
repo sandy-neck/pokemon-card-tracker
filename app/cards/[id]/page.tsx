@@ -58,8 +58,11 @@ export default function CardDetailPage() {
       const newValue = Number(data.estimated_value_usd)
 
       if (newValue > 0) {
+        const update: Record<string, unknown> = { current_value: newValue, updated_at: new Date().toISOString() }
+        if (data.official_image_url) update.image_url = data.official_image_url
+
         await Promise.all([
-          supabase.from('cards').update({ current_value: newValue, updated_at: new Date().toISOString() }).eq('id', card.id),
+          supabase.from('cards').update(update).eq('id', card.id),
           supabase.from('price_snapshots').insert({ card_id: card.id, estimated_value: newValue, notes: data.notes }),
         ])
       }
