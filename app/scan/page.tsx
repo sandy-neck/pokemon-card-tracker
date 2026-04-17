@@ -52,15 +52,18 @@ export default function ScanPage() {
     setState('saving')
 
     try {
-      let imageUrl: string | null = null
-      const fileName = `${Date.now()}.jpg`
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('card-images')
-        .upload(fileName, capturedBlob, { contentType: 'image/jpeg' })
+      // Use official TCG image if available, otherwise fall back to Supabase Storage
+      let imageUrl: string | null = result.official_image_url || null
 
-      if (!uploadError && uploadData) {
-        const { data: { publicUrl } } = supabase.storage.from('card-images').getPublicUrl(uploadData.path)
-        imageUrl = publicUrl
+      if (!imageUrl) {
+        const fileName = `${Date.now()}.jpg`
+        const { data: uploadData } = await supabase.storage
+          .from('card-images')
+          .upload(fileName, capturedBlob, { contentType: 'image/jpeg' })
+        if (uploadData) {
+          const { data: { publicUrl } } = supabase.storage.from('card-images').getPublicUrl(uploadData.path)
+          imageUrl = publicUrl
+        }
       }
 
       const { data: card, error: cardError } = await supabase

@@ -55,12 +55,14 @@ export default function CardDetailPage() {
         }),
       })
       const data = await res.json()
-      const newValue = Number(data.estimated_value_usd) || 0
+      const newValue = Number(data.estimated_value_usd)
 
-      await Promise.all([
-        supabase.from('cards').update({ current_value: newValue, updated_at: new Date().toISOString() }).eq('id', card.id),
-        supabase.from('price_snapshots').insert({ card_id: card.id, estimated_value: newValue, notes: data.notes }),
-      ])
+      if (newValue > 0) {
+        await Promise.all([
+          supabase.from('cards').update({ current_value: newValue, updated_at: new Date().toISOString() }).eq('id', card.id),
+          supabase.from('price_snapshots').insert({ card_id: card.id, estimated_value: newValue, notes: data.notes }),
+        ])
+      }
 
       await loadCard()
     } catch {

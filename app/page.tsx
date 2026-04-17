@@ -113,10 +113,14 @@ export default function DashboardPage() {
           body: JSON.stringify({ cardName: card.name, setName: card.set_name, cardNumber: card.card_number, rarity: card.rarity, condition: card.condition }),
         })
         const data = await res.json()
-        const newValue = Number(data.estimated_value_usd) || 0
-        total += newValue
-        await supabase.from('cards').update({ current_value: newValue, updated_at: new Date().toISOString() }).eq('id', card.id)
-        await supabase.from('price_snapshots').insert({ card_id: card.id, estimated_value: newValue, notes: data.notes })
+        const newValue = Number(data.estimated_value_usd)
+        if (newValue > 0) {
+          total += newValue
+          await supabase.from('cards').update({ current_value: newValue, updated_at: new Date().toISOString() }).eq('id', card.id)
+          await supabase.from('price_snapshots').insert({ card_id: card.id, estimated_value: newValue, notes: data.notes })
+        } else {
+          total += Number(card.current_value) || 0
+        }
       } catch {
         total += Number(card.current_value) || 0
       }

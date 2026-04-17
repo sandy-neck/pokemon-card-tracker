@@ -45,4 +45,5 @@ export interface ScanResult {
   estimated_value_usd: number
   ai_description: string
   ai_valuation_notes: string
+  official_image_url: string | null
 }

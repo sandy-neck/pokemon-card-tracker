@@ -3,6 +3,31 @@ import { NextResponse } from 'next/server'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
+async function fetchOfficialImage(name: string, setName: string, cardNumber: string): Promise<string | null> {
+  try {
+    const q = encodeURIComponent(`name:"${name}"`)
+    const res = await fetch(`https://api.pokemontcg.io/v2/cards?q=${q}&pageSize=10`, {
+      signal: AbortSignal.timeout(6000),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    const cards: Array<{ number?: string; set?: { name?: string }; images?: { large?: string; small?: string } }> = data.data || []
+    if (cards.length === 0) return null
+
+    // Try to match by card number or set name for best result
+    const cardNum = cardNumber?.split('/')[0]
+    const match =
+      cards.find((c) => c.number === cardNum && c.set?.name?.toLowerCase().includes(setName?.toLowerCase())) ||
+      cards.find((c) => c.set?.name?.toLowerCase().includes(setName?.toLowerCase())) ||
+      cards.find((c) => c.number === cardNum) ||
+      cards[0]
+
+    return match?.images?.large || match?.images?.small || null
+  } catch {
+    return null
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const { imageBase64, mimeType } = await req.json()
@@ -60,7 +85,11 @@ Return ONLY the JSON object. No markdown, no code blocks, no other text.`,
     }
 
     const result = JSON.parse(content.text)
-    return NextResponse.json(result)
+
+    // Fetch official card image from Pokémon TCG API
+    const official_image_url = await fetchOfficialImage(result.name, result.set_name, result.card_number)
+
+    return NextResponse.json({ ...result, official_image_url })
   } catch (error) {
     console.error('Scan error:', error)
     return NextResponse.json({ error: 'Failed to analyze card' }, { status: 500 })
