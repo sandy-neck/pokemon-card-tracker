@@ -16,3 +16,22 @@ out/
 .DS_Store
 *.pem
 npm-debug.log*
+
+# Secrets and credentials: never commit (added 2026-10-08). Keep real values in GitHub
+# Actions secrets or a password manager. *.example files stay committable.
+.env.*
+!.env.example
+!.env.*.example
+*.key
+*.p12
+*.pfx
+*.keystore
+id_rsa*
+id_ed25519*
+credentials*.json
+*service-account*.json
+*service_account*.json
+client_secret*.json
+token.json
+secrets/
+.secrets/
