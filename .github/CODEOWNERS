@@ -1,0 +1,4 @@
+# Every file belongs to the account owner. This only gates merges if branch protection turns on
+# "Require review from Code Owners", which a one-person account should leave off (an author
+# can't approve their own PR). Its job here is to make ownership explicit.
+* @sandy-neck
